@@ -43,9 +43,10 @@ static std::shared_ptr<shared_model::interface::Peer> createPeer(
     const std::shared_ptr<shared_model::interface::CommonObjectsFactory>
         &common_objects_factory,
     const std::string &address,
-    const PublicKey &key) {
+    const PublicKey &key,
+    const std::string &tls_certificate) {
   std::shared_ptr<shared_model::interface::Peer> peer;
-  common_objects_factory->createPeer(address, key)
+  common_objects_factory->createPeer(address, key, tls_certificate)
       .match([&peer](auto &&result) { peer = std::move(result.value); },
              [&address](const auto &error) {
                BOOST_THROW_EXCEPTION(
@@ -62,6 +63,7 @@ namespace integration_framework {
         const std::string &listen_ip,
         size_t internal_port,
         const boost::optional<Keypair> &key,
+        const std::string &tls_certificate,
         std::shared_ptr<shared_model::interface::Peer> real_peer,
         const std::shared_ptr<shared_model::interface::CommonObjectsFactory>
             &common_objects_factory,
@@ -73,7 +75,8 @@ namespace integration_framework {
         std::shared_ptr<iroha::ordering::transport::OnDemandOsClientGrpc::
                             TransportFactoryType> proposal_factory,
         std::shared_ptr<iroha::ametsuchi::TxPresenceCache> tx_presence_cache,
-        logger::LoggerManagerTreePtr log_manager)
+        logger::LoggerManagerTreePtr log_manager,
+        const boost::optional<std::string> &p2p_tls_keypair_path)
         : log_(log_manager->getLogger()),
           log_manager_(std::move(log_manager)),
           consensus_log_manager_(log_manager_->getChild("Consensus")),
@@ -87,10 +90,13 @@ namespace integration_framework {
           batch_parser_(batch_parser),
           listen_ip_(listen_ip),
           internal_port_(internal_port),
+          tls_certificate_(tls_certificate),
           keypair_(std::make_unique<Keypair>(
               key.value_or(DefaultCryptoAlgorithmType::generateKeypair()))),
-          this_peer_(createPeer(
-              common_objects_factory, getAddress(), keypair_->publicKey())),
+          this_peer_(createPeer(common_objects_factory,
+                                getAddress(),
+                                keypair_->publicKey(),
+                                tls_certificate)),
           real_peer_(std::move(real_peer)),
           async_call_(std::make_shared<AsyncCall>(
               log_manager_->getChild("AsyncNetworkClient")->getLogger())),
@@ -105,12 +111,13 @@ namespace integration_framework {
               keypair_->publicKey(),
               mst_log_manager_->getChild("State")->getLogger(),
               mst_log_manager_->getChild("Transport")->getLogger())),
-          client_factory(std::make_shared<iroha::network::ClientFactory>()),
+          client_factory_(std::make_shared<iroha::network::ClientFactory>()),
           yac_transport_(std::make_shared<YacTransport>(
               async_call_,
-              [](const shared_model::interface::Peer &peer) {
-                return client_factory_->createClient<
-                    iroha::consensus::yac::proto::Yac>(peer.address());
+              [this](const shared_model::interface::Peer &peer) {
+                return client_factory_
+                    ->createClient<iroha::consensus::yac::proto::Yac>(
+                        peer.address());
               },
               consensus_log_manager_->getChild("Transport")->getLogger())),
           mst_network_notifier_(std::make_shared<MstNetworkNotifier>()),
@@ -138,7 +145,8 @@ namespace integration_framework {
           std::make_shared<LoaderGrpc>(shared_from_this(),
                                        log_manager_->getChild("Synchronizer")
                                            ->getChild("Transport")
-                                           ->getLogger());
+                                           ->getLogger(),
+                                       client_factory_);
       od_os_network_notifier_ =
           std::make_shared<OnDemandOsNetworkNotifier>(shared_from_this());
       od_os_transport_ = std::make_shared<OdOsTransport>(
@@ -224,6 +232,10 @@ namespace integration_framework {
 
     const Keypair &FakePeer::getKeypair() const {
       return *keypair_;
+    }
+
+    std::string FakePeer::getTLSCertificate() const {
+      return tls_certificate_;
     }
 
     std::shared_ptr<shared_model::interface::Peer> FakePeer::getThisPeer()
@@ -372,8 +384,10 @@ namespace integration_framework {
                 ->getTransport();
       }
 
-      auto client = client_factory_->createClient<
-          iroha::ordering::proto::OnDemandOrdering>(real_peer_->address());
+      auto client =
+          client_factory_
+              ->createClient<iroha::ordering::proto::OnDemandOrdering>(
+                  real_peer_->address());
       grpc::ClientContext context;
       google::protobuf::Empty result;
       client->SendBatches(&context, request, &result);
@@ -388,7 +402,8 @@ namespace integration_framework {
               proposal_factory_,
               [] { return std::chrono::system_clock::now(); },
               timeout,
-              ordering_log_manager_->getChild("NetworkClient")->getLogger())
+              ordering_log_manager_->getChild("NetworkClient")->getLogger(),
+              client_factory_)
               .create(*real_peer_);
       return on_demand_os_transport->onRequestProposal(round);
     }

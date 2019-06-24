@@ -45,6 +45,7 @@ target_link_libraries(integration_framework
     server_runner
     mst_transport
     test_logger
+    grpc_client_factory
     )
 
 add_library(common_test_constants common_constants.cpp)

@@ -83,6 +83,31 @@ namespace {
   std::string kLocalHost = "127.0.0.1";
   constexpr size_t kDefaultToriiPort = 11501;
   constexpr size_t kDefaultInternalPort = 50541;
+  std::string kTLSCertificate =
+      "-----BEGIN "
+      "CERTIFICATE-----\\nMIIDpDCCAoygAwIBAgIULOIAu/"
+      "w62xFOFRtPkD88ZuMpGvMwDQYJKoZIhvcNAQEL\\nBQAwWTELMAkGA1UEBhMCQVUxEzARBgN"
+      "VBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM\\nGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDES"
+      "MBAGA1UEAwwJbG9jYWxob3N0MB4X\\nDTE5MDYxMDExNTE0NVoXDTE5MDcxMDExNTE0NVowW"
+      "TELMAkGA1UEBhMCQVUxEzAR\\nBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGEludGVybm"
+      "V0IFdpZGdpdHMgUHR5\\nIEx0ZDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0"
+      "BAQEFAAOCAQ8A\\nMIIBCgKCAQEAnsM/pTtpy2hC5evgKBVNGli+/"
+      "hbdlFsEelctLrb3zaLlrCUpnLSo\\nqzvJ6v2pubjumTxrlovnuz/"
+      "WE9GhvpQsLikjEjIVd6YHzX76vPsdNmM4bn35lyGm\\nCIis3kh36pN93uDlUc/"
+      "AkeL2IVzQGS1hznGV2dnI6JNa1VZWzupYVQ1QHI4YfBWs\\n/"
+      "P0Xg7k2F9YdK5VW7MH6Zdv4jUoEM2i6joVYAjMUAaLvizw9MayrCMRxaQLnOkLK\\n86JRQZ"
+      "p8GjXUbwHMVeze3/109aGtVVFwTgKGQukpJE/"
+      "bue0J+"
+      "ZxDm5glF1MOapCp\\nC0Jb8i61NogiUDTt32uJb0Gmfg7gR5hcBQIDAQABo2QwYjAdBgNVHQ"
+      "4EFgQU03y/\\n2UmTHQgpdlyh76+HAIneuCEwHwYDVR0jBBgwFoAU03y/"
+      "2UmTHQgpdlyh76+HAIne\\nuCEwDwYDVR0TAQH/BAUwAwEB/zAPBgNVHREECDAGhwR/"
+      "AAABMA0GCSqGSIb3DQEB\\nCwUAA4IBAQAMO6uio2ibBYflVgPe0fJjOYvgVCw1GuHFaEZjW"
+      "CVht0v5ATzR85VS\\nLSEVc8Zzvb2pT3O1UxvokMuUbeSdOhZZi77llBwGvcHYCytv/"
+      "C6Yi9zLs1EwDV3j\\nGqwWZdG+GpfIM2yzsyvvBwdc3AmPyH0ejjiBDyHc5dcgcFlH6L/"
+      "N8yaT7J7A9eoK\\nGqVZL1DUvNynEICnT7JFLxpUOE+ejwah7RLyzcSMRWlrN/NX/"
+      "GLcsbflXt0dhRfm\\nSwIxR9t/"
+      "WTu7iR1TIkDx7tLDt8gPbDbJe732FgLYsTtmV0ShF1Zn28FWMQJg4e0s\\nDUX9rCZ7FnQAa"
+      "GqZjuU+mSvfFX7vev7m\\n-----END CERTIFICATE-----\\n";
 
   std::string format_address(std::string ip,
                              integration_framework::PortGuard::PortType port) {
@@ -158,7 +183,7 @@ namespace integration_framework {
                                             log_manager_->getChild("Irohad"),
                                             log_,
                                             dbname)),
-        client_factory_(std::make_shared<iroha::network::ClientFactory()),
+        client_factory_(std::make_shared<iroha::network::ClientFactory>()),
         command_client_(
             client_factory_->createClient<iroha::protocol::CommandService_v1>(
                 format_address(kLocalHost, torii_port_)),
@@ -206,9 +231,10 @@ namespace integration_framework {
         tx_presence_cache_(std::make_shared<AlwaysMissingTxPresenceCache>()),
         yac_transport_(std::make_shared<iroha::consensus::yac::NetworkImpl>(
             async_call_,
-            [](const shared_model::interface::Peer &peer) {
-              return client_factory_->createClient<
-                  iroha::consensus::yac::proto::Yac>(peer.address());
+            [this](const shared_model::interface::Peer &peer) {
+              return client_factory_
+                  ->createClient<iroha::consensus::yac::proto::Yac>(
+                      peer.address());
             },
             log_manager_->getChild("ConsensusTransport")->getLogger())),
         cleanup_on_exit_(cleanup_on_exit) {}
@@ -235,6 +261,7 @@ namespace integration_framework {
         kLocalHost,
         port,
         key,
+        kTLSCertificate,
         this_peer_,
         common_objects_factory_,
         transaction_factory_,
@@ -271,7 +298,7 @@ namespace integration_framework {
         shared_model::proto::TransactionBuilder()
             .creatorAccountId(kAdminId)
             .createdTime(iroha::time::now())
-            .addPeer(getAddress(), key.publicKey())
+            .addPeer(getAddress(), key.publicKey(), kTLSCertificate)
             .createRole(kAdminRole, all_perms)
             .createRole(kDefaultRole, {})
             .createDomain(kDomain, kDefaultRole)
@@ -282,8 +309,10 @@ namespace integration_framework {
             .quorum(1);
     // add fake peers
     for (const auto &fake_peer : fake_peers_) {
-      genesis_tx_builder = genesis_tx_builder.addPeer(
-          fake_peer->getAddress(), fake_peer->getKeypair().publicKey());
+      genesis_tx_builder =
+          genesis_tx_builder.addPeer(fake_peer->getAddress(),
+                                     fake_peer->getKeypair().publicKey(),
+                                     fake_peer->getTLSCertificate());
     };
     auto genesis_tx =
         genesis_tx_builder.build().signAndAddSignature(key).finish();
@@ -350,11 +379,11 @@ namespace integration_framework {
       const shared_model::crypto::Keypair &keypair) {
     log_->info("init state");
     my_key_ = keypair;
-    this_peer_ =
-        framework::expected::val(common_objects_factory_->createPeer(
-                                     getAddress(), keypair.publicKey()))
-            .value()
-            .value;
+    this_peer_ = framework::expected::val(
+                     common_objects_factory_->createPeer(
+                         getAddress(), keypair.publicKey(), kTLSCertificate))
+                     .value()
+                     .value;
     iroha_instance_->initPipeline(keypair, maximum_proposal_size_);
     log_->info("created pipeline");
   }
@@ -655,7 +684,8 @@ namespace integration_framework {
                                            // only used when waiting a response
                                            // for a proposal request, which our
                                            // client does not do
-            log_manager_->getChild("OrderingClientTransport")->getLogger())
+            log_manager_->getChild("OrderingClientTransport")->getLogger(),
+            client_factory_)
             .create(*this_peer_);
     on_demand_os_transport->onBatches(batches);
     return *this;
@@ -670,7 +700,8 @@ namespace integration_framework {
             proposal_factory_,
             [] { return std::chrono::system_clock::now(); },
             timeout,
-            log_manager_->getChild("OrderingClientTransport")->getLogger())
+            log_manager_->getChild("OrderingClientTransport")->getLogger(),
+            client_factory_)
             .create(*this_peer_);
     return on_demand_os_transport->onRequestProposal(round);
   }

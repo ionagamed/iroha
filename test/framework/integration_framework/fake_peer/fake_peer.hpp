@@ -56,6 +56,7 @@ namespace integration_framework {
           const std::string &listen_ip,
           size_t internal_port,
           const boost::optional<shared_model::crypto::Keypair> &key,
+          const std::string &tls_certificate,
           std::shared_ptr<shared_model::interface::Peer> real_peer,
           const std::shared_ptr<shared_model::interface::CommonObjectsFactory>
               &common_objects_factory,
@@ -67,7 +68,9 @@ namespace integration_framework {
           std::shared_ptr<iroha::ordering::transport::OnDemandOsClientGrpc::
                               TransportFactoryType> proposal_factory,
           std::shared_ptr<iroha::ametsuchi::TxPresenceCache> tx_presence_cache,
-          logger::LoggerManagerTreePtr log_manager);
+          logger::LoggerManagerTreePtr log_manager,
+          const boost::optional<std::string> &p2p_tls_keypair_path =
+              boost::none);
 
       ~FakePeer();
 
@@ -102,6 +105,9 @@ namespace integration_framework {
 
       /// Get the keypair of this peer.
       const shared_model::crypto::Keypair &getKeypair() const;
+
+      /// Get the TLS certificate of this peer.
+      std::string getTLSCertificate() const;
 
       /// Get interface::Peer object for this instance.
       std::shared_ptr<shared_model::interface::Peer> getThisPeer() const;
@@ -254,6 +260,9 @@ namespace integration_framework {
       std::shared_ptr<Behaviour> behaviour_;
       std::shared_ptr<BlockStorage> block_storage_;
       ProposalStorage proposal_storage_;
+
+      boost::optional<std::string> p2p_tls_keypair_path_;
+      std::string tls_certificate_;
     };
 
   }  // namespace fake_peer
