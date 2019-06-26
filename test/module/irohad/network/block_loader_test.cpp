@@ -62,7 +62,8 @@ class BlockLoaderTest : public testing::Test {
         shared_model::proto::ProtoBlockFactory(
             std::move(validator_ptr),
             std::make_unique<MockValidator<iroha::protocol::Block>>()),
-        getTestLogger("BlockLoader"));
+        getTestLogger("BlockLoader"),
+        std::make_shared<iroha::network::ClientFactory>());
     service = std::make_shared<BlockLoaderService>(
         block_query_factory, block_cache, getTestLogger("BlockLoaderService"));
 

@@ -23,6 +23,32 @@ namespace iroha {
 
   class ChainValidatorStorageTest : public ametsuchi::AmetsuchiTest {
    public:
+    static constexpr auto kTLSCertificate =
+        "-----BEGIN "
+        "CERTIFICATE-----\\nMIIDpDCCAoygAwIBAgIULOIAu/"
+        "w62xFOFRtPkD88ZuMpGvMwDQYJKoZIhvcNAQEL\\nBQAwWTELMAkGA1UEBhMCQVUxEzARB"
+        "gNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM\\nGEludGVybmV0IFdpZGdpdHMgUHR5IEx0"
+        "ZDESMBAGA1UEAwwJbG9jYWxob3N0MB4X\\nDTE5MDYxMDExNTE0NVoXDTE5MDcxMDExNTE"
+        "0NVowWTELMAkGA1UEBhMCQVUxEzAR\\nBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGE"
+        "ludGVybmV0IFdpZGdpdHMgUHR5\\nIEx0ZDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANB"
+        "gkqhkiG9w0BAQEFAAOCAQ8A\\nMIIBCgKCAQEAnsM/pTtpy2hC5evgKBVNGli+/"
+        "hbdlFsEelctLrb3zaLlrCUpnLSo\\nqzvJ6v2pubjumTxrlovnuz/"
+        "WE9GhvpQsLikjEjIVd6YHzX76vPsdNmM4bn35lyGm\\nCIis3kh36pN93uDlUc/"
+        "AkeL2IVzQGS1hznGV2dnI6JNa1VZWzupYVQ1QHI4YfBWs\\n/"
+        "P0Xg7k2F9YdK5VW7MH6Zdv4jUoEM2i6joVYAjMUAaLvizw9MayrCMRxaQLnOkLK\\n86JR"
+        "QZp8GjXUbwHMVeze3/109aGtVVFwTgKGQukpJE/"
+        "bue0J+"
+        "ZxDm5glF1MOapCp\\nC0Jb8i61NogiUDTt32uJb0Gmfg7gR5hcBQIDAQABo2QwYjAdBgNV"
+        "HQ4EFgQU03y/\\n2UmTHQgpdlyh76+HAIneuCEwHwYDVR0jBBgwFoAU03y/"
+        "2UmTHQgpdlyh76+HAIne\\nuCEwDwYDVR0TAQH/BAUwAwEB/zAPBgNVHREECDAGhwR/"
+        "AAABMA0GCSqGSIb3DQEB\\nCwUAA4IBAQAMO6uio2ibBYflVgPe0fJjOYvgVCw1GuHFaEZ"
+        "jWCVht0v5ATzR85VS\\nLSEVc8Zzvb2pT3O1UxvokMuUbeSdOhZZi77llBwGvcHYCytv/"
+        "C6Yi9zLs1EwDV3j\\nGqwWZdG+GpfIM2yzsyvvBwdc3AmPyH0ejjiBDyHc5dcgcFlH6L/"
+        "N8yaT7J7A9eoK\\nGqVZL1DUvNynEICnT7JFLxpUOE+ejwah7RLyzcSMRWlrN/NX/"
+        "GLcsbflXt0dhRfm\\nSwIxR9t/"
+        "WTu7iR1TIkDx7tLDt8gPbDbJe732FgLYsTtmV0ShF1Zn28FWMQJg4e0s\\nDUX9rCZ7FnQ"
+        "AaGqZjuU+mSvfFX7vev7m\\n-----END CERTIFICATE-----\\n";
+
     void SetUp() override {
       ametsuchi::AmetsuchiTest::SetUp();
       validator = std::make_shared<validation::ChainValidatorImpl>(
@@ -82,12 +108,13 @@ namespace iroha {
 
     /// Create first block with 4 peers, apply it to storage and return it
     auto generateAndApplyFirstBlock() {
-      auto tx =
-          completeTx(baseTx()
-                         .addPeer("0.0.0.0:50541", keys.at(0).publicKey())
-                         .addPeer("0.0.0.0:50542", keys.at(1).publicKey())
-                         .addPeer("0.0.0.0:50543", keys.at(2).publicKey())
-                         .addPeer("0.0.0.0:50544", keys.at(3).publicKey()));
+      auto tx = completeTx(
+          baseTx()
+              .addPeer("0.0.0.0:50541", keys.at(0).publicKey(), kTLSCertificate)
+              .addPeer("0.0.0.0:50542", keys.at(1).publicKey(), kTLSCertificate)
+              .addPeer("0.0.0.0:50543", keys.at(2).publicKey(), kTLSCertificate)
+              .addPeer(
+                  "0.0.0.0:50544", keys.at(3).publicKey(), kTLSCertificate));
 
       auto block = completeBlock(
           baseBlock({tx},
@@ -133,8 +160,8 @@ namespace iroha {
   TEST_F(ChainValidatorStorageTest, PeerAdded) {
     auto block1 = generateAndApplyFirstBlock();
 
-    auto add_peer =
-        completeTx(baseTx().addPeer("0.0.0.0:50545", keys.at(4).publicKey()));
+    auto add_peer = completeTx(baseTx().addPeer(
+        "0.0.0.0:50545", keys.at(4).publicKey(), kTLSCertificate));
     auto block2 = completeBlock(baseBlock({add_peer}, 2, block1->hash())
                                     .signAndAddSignature(keys.at(0))
                                     .signAndAddSignature(keys.at(1))

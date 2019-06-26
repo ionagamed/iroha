@@ -24,10 +24,10 @@ PeerCertificateAuthMetadataProcessor::PeerCertificateAuthMetadataProcessor(
     : peer_query_(peer_query) {}
 
 grpc::Status PeerCertificateAuthMetadataProcessor::Process(
-    const grpc_impl::AuthMetadataProcessor::InputMetadata &auth_metadata,
+    const grpc::AuthMetadataProcessor::InputMetadata &auth_metadata,
     grpc::AuthContext *context,
-    grpc_impl::AuthMetadataProcessor::OutputMetadata *consumed_auth_metadata,
-    grpc_impl::AuthMetadataProcessor::OutputMetadata *response_metadata) {
+    grpc::AuthMetadataProcessor::OutputMetadata *consumed_auth_metadata,
+    grpc::AuthMetadataProcessor::OutputMetadata *response_metadata) {
   auto pem_cert_values = context->FindPropertyValues("x509_pem_cert");
   if (pem_cert_values.size() != 1) {
     return grpc::Status::CANCELLED;

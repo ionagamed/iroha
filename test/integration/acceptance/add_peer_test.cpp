@@ -26,6 +26,32 @@ using namespace shared_model::interface::permissions;
 static constexpr std::chrono::seconds kMstStateWaitingTime(20);
 static constexpr std::chrono::seconds kSynchronizerWaitingTime(20);
 
+static constexpr auto kTLSCertificate =
+    "-----BEGIN "
+    "CERTIFICATE-----\\nMIIDpDCCAoygAwIBAgIULOIAu/"
+    "w62xFOFRtPkD88ZuMpGvMwDQYJKoZIhvcNAQEL\\nBQAwWTELMAkGA1UEBhMCQVUxEzARBgNVB"
+    "AgMClNvbWUtU3RhdGUxITAfBgNVBAoM\\nGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDESMBAG"
+    "A1UEAwwJbG9jYWxob3N0MB4X\\nDTE5MDYxMDExNTE0NVoXDTE5MDcxMDExNTE0NVowWTELMAk"
+    "GA1UEBhMCQVUxEzAR\\nBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGEludGVybmV0IFdpZG"
+    "dpdHMgUHR5\\nIEx0ZDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEFAAOCA"
+    "Q8A\\nMIIBCgKCAQEAnsM/pTtpy2hC5evgKBVNGli+/"
+    "hbdlFsEelctLrb3zaLlrCUpnLSo\\nqzvJ6v2pubjumTxrlovnuz/"
+    "WE9GhvpQsLikjEjIVd6YHzX76vPsdNmM4bn35lyGm\\nCIis3kh36pN93uDlUc/"
+    "AkeL2IVzQGS1hznGV2dnI6JNa1VZWzupYVQ1QHI4YfBWs\\n/"
+    "P0Xg7k2F9YdK5VW7MH6Zdv4jUoEM2i6joVYAjMUAaLvizw9MayrCMRxaQLnOkLK\\n86JRQZp8"
+    "GjXUbwHMVeze3/109aGtVVFwTgKGQukpJE/"
+    "bue0J+"
+    "ZxDm5glF1MOapCp\\nC0Jb8i61NogiUDTt32uJb0Gmfg7gR5hcBQIDAQABo2QwYjAdBgNVHQ4E"
+    "FgQU03y/\\n2UmTHQgpdlyh76+HAIneuCEwHwYDVR0jBBgwFoAU03y/"
+    "2UmTHQgpdlyh76+HAIne\\nuCEwDwYDVR0TAQH/BAUwAwEB/zAPBgNVHREECDAGhwR/"
+    "AAABMA0GCSqGSIb3DQEB\\nCwUAA4IBAQAMO6uio2ibBYflVgPe0fJjOYvgVCw1GuHFaEZjWCV"
+    "ht0v5ATzR85VS\\nLSEVc8Zzvb2pT3O1UxvokMuUbeSdOhZZi77llBwGvcHYCytv/"
+    "C6Yi9zLs1EwDV3j\\nGqwWZdG+GpfIM2yzsyvvBwdc3AmPyH0ejjiBDyHc5dcgcFlH6L/"
+    "N8yaT7J7A9eoK\\nGqVZL1DUvNynEICnT7JFLxpUOE+ejwah7RLyzcSMRWlrN/NX/"
+    "GLcsbflXt0dhRfm\\nSwIxR9t/"
+    "WTu7iR1TIkDx7tLDt8gPbDbJe732FgLYsTtmV0ShF1Zn28FWMQJg4e0s\\nDUX9rCZ7FnQAaGq"
+    "ZjuU+mSvfFX7vev7m\\n-----END CERTIFICATE-----\\n";
+
 template <size_t N>
 void checkBlockHasNTxs(const std::shared_ptr<const interface::Block> &block) {
   ASSERT_EQ(block->transactions().size(), N);
@@ -112,7 +138,8 @@ TEST_F(FakePeerExampleFixture, FakePeerIsAdded) {
   // ------------------------ WHEN -------------------------
   // send addPeer command
   itf.sendTxAwait(
-      complete(baseTx(kAdminId).addPeer(new_peer_address, new_peer_pubkey),
+      complete(baseTx(kAdminId).addPeer(
+                   new_peer_address, new_peer_pubkey, kTLSCertificate),
                kAdminKeypair),
       checkBlockHasNTxs<1>);
 
@@ -181,7 +208,8 @@ TEST_F(FakePeerExampleFixture, MstStatePropagtesToNewPeer) {
 
   itf.sendTxAwait(
       complete(baseTx(kAdminId).addPeer(new_peer->getAddress(),
-                                        new_peer->getKeypair().publicKey()),
+                                        new_peer->getKeypair().publicKey(),
+                                        kTLSCertificate),
                kAdminKeypair),
       checkBlockHasNTxs<1>);
 
@@ -224,7 +252,8 @@ TEST_F(FakePeerExampleFixture, RealPeerIsAdded) {
           .creatorAccountId(kAdminId)
           .createdTime(iroha::time::now())
           .addPeer(initial_peer->getAddress(),
-                   initial_peer->getKeypair().publicKey())
+                   initial_peer->getKeypair().publicKey(),
+                   kTLSCertificate)
           .createRole(kAdminRole, all_perms)
           .createRole(kDefaultRole, {})
           .createDomain(kDomain, kDefaultRole)
@@ -251,7 +280,8 @@ TEST_F(FakePeerExampleFixture, RealPeerIsAdded) {
       proto::BlockBuilder()
           .transactions(std::vector<shared_model::proto::Transaction>{
               complete(baseTx(kAdminId).addPeer(itf_->getAddress(),
-                                                itf_->getThisPeer()->pubkey()),
+                                                itf_->getThisPeer()->pubkey(),
+                                                kTLSCertificate),
                        kAdminKeypair)})
           .height(genesis_block.height() + 1)
           .prevHash(genesis_block.hash())

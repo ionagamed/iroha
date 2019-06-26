@@ -12,6 +12,7 @@ target_link_libraries(server_runner
     boost
     common
     )
+target_include_directories(server_runner PUBLIC ${PROJECT_SOURCE_DIR})
 
 add_library(raw_block_loader impl/raw_block_loader.cpp)
 target_link_libraries(raw_block_loader

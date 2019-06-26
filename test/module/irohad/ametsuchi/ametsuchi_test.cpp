@@ -26,6 +26,31 @@ using namespace shared_model::interface::permissions;
 auto zero_string = std::string(32, '0');
 auto fake_hash = shared_model::crypto::Hash(zero_string);
 auto fake_pubkey = shared_model::crypto::PublicKey(zero_string);
+auto tls_certificate =
+    "-----BEGIN "
+    "CERTIFICATE-----\\nMIIDpDCCAoygAwIBAgIULOIAu/"
+    "w62xFOFRtPkD88ZuMpGvMwDQYJKoZIhvcNAQEL\\nBQAwWTELMAkGA1UEBhMCQVUxEzARBgNVB"
+    "AgMClNvbWUtU3RhdGUxITAfBgNVBAoM\\nGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDESMBAG"
+    "A1UEAwwJbG9jYWxob3N0MB4X\\nDTE5MDYxMDExNTE0NVoXDTE5MDcxMDExNTE0NVowWTELMAk"
+    "GA1UEBhMCQVUxEzAR\\nBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGEludGVybmV0IFdpZG"
+    "dpdHMgUHR5\\nIEx0ZDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEFAAOCA"
+    "Q8A\\nMIIBCgKCAQEAnsM/pTtpy2hC5evgKBVNGli+/"
+    "hbdlFsEelctLrb3zaLlrCUpnLSo\\nqzvJ6v2pubjumTxrlovnuz/"
+    "WE9GhvpQsLikjEjIVd6YHzX76vPsdNmM4bn35lyGm\\nCIis3kh36pN93uDlUc/"
+    "AkeL2IVzQGS1hznGV2dnI6JNa1VZWzupYVQ1QHI4YfBWs\\n/"
+    "P0Xg7k2F9YdK5VW7MH6Zdv4jUoEM2i6joVYAjMUAaLvizw9MayrCMRxaQLnOkLK\\n86JRQZp8"
+    "GjXUbwHMVeze3/109aGtVVFwTgKGQukpJE/"
+    "bue0J+"
+    "ZxDm5glF1MOapCp\\nC0Jb8i61NogiUDTt32uJb0Gmfg7gR5hcBQIDAQABo2QwYjAdBgNVHQ4E"
+    "FgQU03y/\\n2UmTHQgpdlyh76+HAIneuCEwHwYDVR0jBBgwFoAU03y/"
+    "2UmTHQgpdlyh76+HAIne\\nuCEwDwYDVR0TAQH/BAUwAwEB/zAPBgNVHREECDAGhwR/"
+    "AAABMA0GCSqGSIb3DQEB\\nCwUAA4IBAQAMO6uio2ibBYflVgPe0fJjOYvgVCw1GuHFaEZjWCV"
+    "ht0v5ATzR85VS\\nLSEVc8Zzvb2pT3O1UxvokMuUbeSdOhZZi77llBwGvcHYCytv/"
+    "C6Yi9zLs1EwDV3j\\nGqwWZdG+GpfIM2yzsyvvBwdc3AmPyH0ejjiBDyHc5dcgcFlH6L/"
+    "N8yaT7J7A9eoK\\nGqVZL1DUvNynEICnT7JFLxpUOE+ejwah7RLyzcSMRWlrN/NX/"
+    "GLcsbflXt0dhRfm\\nSwIxR9t/"
+    "WTu7iR1TIkDx7tLDt8gPbDbJe732FgLYsTtmV0ShF1Zn28FWMQJg4e0s\\nDUX9rCZ7FnQAaGq"
+    "ZjuU+mSvfFX7vev7m\\n-----END CERTIFICATE-----\\n";
 
 // Allows to print amount string in case of test failure
 namespace shared_model {
@@ -167,7 +192,7 @@ TEST_F(AmetsuchiTest, PeerTest) {
 
   std::vector<shared_model::proto::Transaction> txs;
   txs.push_back(TestTransactionBuilder()
-                    .addPeer("192.168.9.1:50051", fake_pubkey)
+                    .addPeer("192.168.9.1:50051", fake_pubkey, tls_certificate)
                     .build());
 
   auto block = createBlock(txs, 1, fake_hash);
@@ -180,6 +205,7 @@ TEST_F(AmetsuchiTest, PeerTest) {
   ASSERT_EQ(peers->at(0)->address(), "192.168.9.1:50051");
 
   ASSERT_EQ(peers->at(0)->pubkey(), fake_pubkey);
+  ASSERT_EQ(peers->at(0)->tlsCertificate(), tls_certificate);
 }
 
 TEST_F(AmetsuchiTest, AddSignatoryTest) {
@@ -350,7 +376,7 @@ std::shared_ptr<const shared_model::interface::Block> getBlock() {
   std::vector<shared_model::proto::Transaction> txs;
   txs.push_back(TestTransactionBuilder()
                     .creatorAccountId("adminone")
-                    .addPeer("192.168.0.0:10001", fake_pubkey)
+                    .addPeer("192.168.0.0:10001", fake_pubkey, tls_certificate)
                     .build());
 
   auto block = createBlock(txs, 1, fake_hash);
@@ -536,8 +562,9 @@ TEST_F(AmetsuchiTest, TestingWsvAfterCommitBlock) {
 class PreparedBlockTest : public AmetsuchiTest {
  public:
   PreparedBlockTest()
-      : key(shared_model::crypto::DefaultCryptoAlgorithmType::
-                generateKeypair()) {}
+      : key(
+          shared_model::crypto::DefaultCryptoAlgorithmType::generateKeypair()) {
+  }
 
   shared_model::proto::Transaction createAddAsset(const std::string &amount) {
     return shared_model::proto::TransactionBuilder()

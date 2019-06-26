@@ -13,6 +13,34 @@
 namespace iroha {
   namespace model {
     namespace generators {
+      const auto kTLSCertificate =
+          "-----BEGIN "
+          "CERTIFICATE-----\\nMIIDpDCCAoygAwIBAgIULOIAu/"
+          "w62xFOFRtPkD88ZuMpGvMwDQYJKoZIhvcNAQEL\\nBQAwWTELMAkGA1UEBhMCQVUxEzA"
+          "RBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM\\nGEludGVybmV0IFdpZGdpdHMgUHR5"
+          "IEx0ZDESMBAGA1UEAwwJbG9jYWxob3N0MB4X\\nDTE5MDYxMDExNTE0NVoXDTE5MDcxM"
+          "DExNTE0NVowWTELMAkGA1UEBhMCQVUxEzAR\\nBgNVBAgMClNvbWUtU3RhdGUxITAfBg"
+          "NVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5\\nIEx0ZDESMBAGA1UEAwwJbG9jYWxob3N"
+          "0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\\nMIIBCgKCAQEAnsM/"
+          "pTtpy2hC5evgKBVNGli+/"
+          "hbdlFsEelctLrb3zaLlrCUpnLSo\\nqzvJ6v2pubjumTxrlovnuz/"
+          "WE9GhvpQsLikjEjIVd6YHzX76vPsdNmM4bn35lyGm\\nCIis3kh36pN93uDlUc/"
+          "AkeL2IVzQGS1hznGV2dnI6JNa1VZWzupYVQ1QHI4YfBWs\\n/"
+          "P0Xg7k2F9YdK5VW7MH6Zdv4jUoEM2i6joVYAjMUAaLvizw9MayrCMRxaQLnOkLK\\n86"
+          "JRQZp8GjXUbwHMVeze3/109aGtVVFwTgKGQukpJE/"
+          "bue0J+"
+          "ZxDm5glF1MOapCp\\nC0Jb8i61NogiUDTt32uJb0Gmfg7gR5hcBQIDAQABo2QwYjAdBg"
+          "NVHQ4EFgQU03y/\\n2UmTHQgpdlyh76+HAIneuCEwHwYDVR0jBBgwFoAU03y/"
+          "2UmTHQgpdlyh76+HAIne\\nuCEwDwYDVR0TAQH/BAUwAwEB/zAPBgNVHREECDAGhwR/"
+          "AAABMA0GCSqGSIb3DQEB\\nCwUAA4IBAQAMO6uio2ibBYflVgPe0fJjOYvgVCw1GuHFa"
+          "EZjWCVht0v5ATzR85VS\\nLSEVc8Zzvb2pT3O1UxvokMuUbeSdOhZZi77llBwGvcHYCy"
+          "tv/"
+          "C6Yi9zLs1EwDV3j\\nGqwWZdG+"
+          "GpfIM2yzsyvvBwdc3AmPyH0ejjiBDyHc5dcgcFlH6L/"
+          "N8yaT7J7A9eoK\\nGqVZL1DUvNynEICnT7JFLxpUOE+ejwah7RLyzcSMRWlrN/NX/"
+          "GLcsbflXt0dhRfm\\nSwIxR9t/"
+          "WTu7iR1TIkDx7tLDt8gPbDbJe732FgLYsTtmV0ShF1Zn28FWMQJg4e0s\\nDUX9rCZ7F"
+          "nQAaGqZjuU+mSvfFX7vev7m\\n-----END CERTIFICATE-----\\n";
 
       iroha::keypair_t *makeOldModel(
           const shared_model::crypto::Keypair &keypair) {
@@ -38,7 +66,7 @@ namespace iroha {
           auto keypair = *std::unique_ptr<iroha::keypair_t>(
               makeOldModel(*manager.loadKeys()));
           tx.commands.push_back(command_generator.generateAddPeer(
-              Peer(peers_address[i], keypair.pubkey)));
+              Peer(peers_address[i], keypair.pubkey, kTLSCertificate)));
         }
         // Create admin role
         tx.commands.push_back(

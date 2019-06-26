@@ -183,6 +183,9 @@ struct MockPeer : public shared_model::interface::Peer {
                      const shared_model::interface::types::AddressType &());
   MOCK_CONST_METHOD0(pubkey,
                      const shared_model::interface::types::PubkeyType &());
+  MOCK_CONST_METHOD0(
+      tlsCertificate,
+      const shared_model::interface::types::TLSCertificateType &());
   MOCK_CONST_METHOD0(clone, MockPeer *());
 };
 
@@ -207,10 +210,11 @@ struct MockUnsafeProposalFactory
 
 struct MockCommonObjectsFactory
     : public shared_model::interface::CommonObjectsFactory {
-  MOCK_METHOD2(createPeer,
+  MOCK_METHOD3(createPeer,
                FactoryResult<std::unique_ptr<shared_model::interface::Peer>>(
                    const shared_model::interface::types::AddressType &,
-                   const shared_model::interface::types::PubkeyType &));
+                   const shared_model::interface::types::PubkeyType &,
+                   const shared_model::interface::types::TLSCertificateType &));
 
   MOCK_METHOD4(createAccount,
                FactoryResult<std::unique_ptr<shared_model::interface::Account>>(

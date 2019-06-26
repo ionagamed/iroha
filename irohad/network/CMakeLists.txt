@@ -51,4 +51,6 @@ target_link_libraries(grpc_client_factory
     loader_grpc
     ordering_grpc
     yac_grpc
+    endpoint
     )
+target_include_directories(grpc_client_factory PUBLIC ${PROJECT_SOURCE_DIR})
